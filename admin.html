@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel de administración — Rematech</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0A0A0A; color: #F7F7F5; font-family: 'Space Grotesk', Helvetica, Arial, sans-serif; }
+    a { color: inherit; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .hidden { display: none !important; }
+
+    /* Barra superior */
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 24px; border-bottom: 1px solid #262626; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; }
+    .brand svg { display: block; }
+    .btn { border: none; cursor: pointer; font: inherit; font-weight: 600; border-radius: 3px; padding: 11px 18px; transition: opacity .15s, background .15s; }
+    .btn-pri { background: #F7F7F5; color: #0A0A0A; }
+    .btn-pri:hover { opacity: .85; }
+    .btn-ghost { background: transparent; color: #F7F7F5; border: 1px solid #3a3a3a; }
+    .btn-ghost:hover { background: #1a1a1a; }
+    .btn-danger { background: transparent; color: #ff8a80; border: 1px solid #5c2b2e; padding: 8px 12px; font-size: 13px; }
+    .btn-danger:hover { background: #2a1215; }
+    .btn-sm { padding: 8px 12px; font-size: 13px; }
+
+    /* Login */
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-card { width: 100%; max-width: 380px; background: #141414; border: 1px solid #262626; border-radius: 8px; padding: 32px; }
+    .login-card h1 { font-size: 22px; margin: 0 0 6px 0; }
+    .login-card p.sub { color: #888; font-size: 14px; margin: 0 0 24px 0; }
+
+    label { display: block; font-size: 13px; color: #aaa; margin: 0 0 6px 0; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .05em; }
+    input, select, textarea { width: 100%; background: #0A0A0A; border: 1px solid #333; color: #F7F7F5; border-radius: 3px; padding: 11px 12px; font: inherit; font-size: 15px; margin: 0 0 16px 0; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #F7F7F5; }
+    .field-row { display: flex; gap: 12px; }
+    .field-row > div { flex: 1; }
+
+    .msg { font-size: 14px; padding: 10px 12px; border-radius: 3px; margin: 0 0 16px 0; }
+    .msg.err { background: #2a1215; color: #ff8a80; border: 1px solid #5c2b2e; }
+    .msg.ok { background: #10251a; color: #6ee7a8; border: 1px solid #1f5c3a; }
+
+    /* Panel */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px 24px; }
+    .grid2 { display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start; }
+    @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+    .panel { background: #141414; border: 1px solid #262626; border-radius: 8px; padding: 24px; }
+    .panel h2 { font-size: 17px; margin: 0 0 18px 0; }
+
+    .prod-list { display: flex; flex-direction: column; gap: 12px; }
+    .prod-item { display: flex; gap: 14px; align-items: center; background: #141414; border: 1px solid #262626; border-radius: 8px; padding: 12px; }
+    .prod-item .thumb { width: 76px; height: 57px; border-radius: 4px; object-fit: cover; background: #222; flex: none; border: 1px solid #333; }
+    .prod-item .info { flex: 1; min-width: 0; }
+    .prod-item .info h3 { font-size: 15px; margin: 0 0 3px 0; }
+    .prod-item .info p { margin: 0; font-size: 12px; color: #888; }
+    .prod-item .price { font-weight: 700; font-size: 14px; margin-top: 4px; }
+    .prod-item .acts { display: flex; flex-direction: column; gap: 6px; flex: none; }
+    .badge { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 6px; border: 1px solid #333; border-radius: 3px; color: #aaa; margin-left: 6px; }
+    .badge.off { color: #ff8a80; border-color: #5c2b2e; }
+
+    .thumb-preview { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 4px; border: 1px solid #333; margin: 0 0 14px 0; background: #0A0A0A; }
+    .hint { font-size: 12px; color: #777; margin: -8px 0 16px 0; }
+    .empty { color: #777; text-align: center; padding: 40px 0; }
+  </style>
+</head>
+<body>
+
+  <!-- ===================== LOGIN ===================== -->
+  <div id="loginView" class="login-wrap">
+    <form class="login-card" id="loginForm">
+      <div class="brand" style="margin-bottom:20px;">
+        <svg width="34" height="34" viewBox="0 0 40 40"><rect width="40" height="40" rx="6" fill="#F7F7F5"/><text x="20" y="27" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="18" fill="#0A0A0A" text-anchor="middle">RT</text></svg>
+        REMATECH
+      </div>
+      <h1 id="authTitle">Panel de administración</h1>
+      <p class="sub" id="authSub">Ingresá para gestionar los productos de la tienda.</p>
+      <div id="loginMsg"></div>
+      <label>Correo</label>
+      <input type="email" id="email" autocomplete="username" required placeholder="tucorreo@ejemplo.com">
+      <label>Contraseña</label>
+      <input type="password" id="password" autocomplete="current-password" required placeholder="••••••••">
+      <button type="submit" class="btn btn-pri" id="authSubmit" style="width:100%;">Ingresar</button>
+    </form>
+  </div>
+
+  <!-- ===================== PANEL ===================== -->
+  <div id="appView" class="hidden">
+    <div class="topbar">
+      <div class="brand">
+        <svg width="30" height="30" viewBox="0 0 40 40"><rect width="40" height="40" rx="6" fill="#F7F7F5"/><text x="20" y="27" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="18" fill="#0A0A0A" text-anchor="middle">RT</text></svg>
+        Administración
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a class="btn btn-ghost btn-sm" href="Productos.html" target="_blank" rel="noopener">Ver la tienda ↗</a>
+        <button class="btn btn-ghost btn-sm" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div class="grid2">
+        <!-- Formulario -->
+        <div class="panel">
+          <h2 id="formTitle">Agregar producto</h2>
+          <div id="formMsg"></div>
+          <form id="prodForm">
+            <input type="hidden" id="prodId">
+
+            <img id="preview" class="thumb-preview hidden" alt="Vista previa">
+            <label>Foto del producto</label>
+            <input type="file" id="foto" accept="image/*">
+            <p class="hint">Opcional. Si no subís foto, se muestra una ilustración.</p>
+
+            <label>Nombre *</label>
+            <input type="text" id="nombre" required placeholder="Lenovo ThinkPad T14">
+
+            <label>Especificaciones</label>
+            <input type="text" id="spec" placeholder="i5-10ª Gen · 16GB · 512GB SSD">
+
+            <label>Condición</label>
+            <input type="text" id="condicion" placeholder="Reacondicionada · Grado A">
+
+            <div class="field-row">
+              <div>
+                <label>Precio</label>
+                <input type="text" id="precio" placeholder="Gs. 3.800.000">
+              </div>
+              <div>
+                <label>Categoría</label>
+                <select id="categoria">
+                  <option>Nuevas</option>
+                  <option>Reacondicionadas</option>
+                  <option>Gaming</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div>
+                <label>Color</label>
+                <input type="color" id="color" value="#2E5CE6" style="height:44px; padding:4px;">
+              </div>
+              <div>
+                <label>Disponible</label>
+                <select id="disponible">
+                  <option value="true">Sí, mostrar en la web</option>
+                  <option value="false">No (ocultar)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:6px;">
+              <button type="submit" class="btn btn-pri" id="saveBtn" style="flex:1;">Guardar producto</button>
+              <button type="button" class="btn btn-ghost hidden" id="cancelBtn">Cancelar</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Lista -->
+        <div>
+          <h2 style="margin:4px 0 18px 0; font-size:17px;">Productos cargados <span id="count" class="mono" style="color:#777;"></span></h2>
+          <div id="list" class="prod-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+
+    const $ = (id) => document.getElementById(id);
+    const loginView = $("loginView"), appView = $("appView");
+
+    function showMsg(el, text, type) {
+      el.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : "";
+    }
+
+    // ---------- Sesión ----------
+    let authMode = "login"; // "login" o "register"
+
+    function showApp() { loginView.classList.add("hidden"); appView.classList.remove("hidden"); loadProducts(); }
+
+    function applyAuthMode() {
+      if (authMode === "register") {
+        $("authTitle").textContent = "Crear cuenta de administrador";
+        $("authSub").textContent = "Sos el primero en registrarte: esta cuenta será la del administrador de la tienda.";
+        $("authSubmit").textContent = "Crear cuenta";
+        $("password").setAttribute("autocomplete", "new-password");
+      } else {
+        $("authTitle").textContent = "Panel de administración";
+        $("authSub").textContent = "Ingresá para gestionar los productos de la tienda.";
+        $("authSubmit").textContent = "Ingresar";
+        $("password").setAttribute("autocomplete", "current-password");
+      }
+    }
+
+    async function initAuth() {
+      const { data } = await sb.auth.getSession();
+      if (data.session) { showApp(); return; }
+      // Si todavía no hay ningún admin, el primero en registrarse lo será.
+      let existe = true;
+      try { const r = await sb.rpc("admin_existe"); existe = !!r.data; } catch (e) { existe = true; }
+      authMode = existe ? "login" : "register";
+      applyAuthMode();
+      appView.classList.add("hidden");
+      loginView.classList.remove("hidden");
+    }
+
+    $("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = $("email").value.trim(), password = $("password").value;
+
+      if (authMode === "register") {
+        showMsg($("loginMsg"), "Creando cuenta…", "ok");
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) { showMsg($("loginMsg"), "No se pudo crear la cuenta: " + error.message, "err"); return; }
+        if (data.session) { showMsg($("loginMsg"), "", ""); showApp(); }
+        else {
+          authMode = "login"; applyAuthMode();
+          showMsg($("loginMsg"), "Cuenta creada ✓ Revisá tu correo, confirmá la cuenta y luego iniciá sesión.", "ok");
+        }
+        return;
+      }
+
+      showMsg($("loginMsg"), "Ingresando…", "ok");
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) { showMsg($("loginMsg"), "No se pudo ingresar: correo/contraseña incorrectos, o falta confirmar el correo.", "err"); return; }
+      showMsg($("loginMsg"), "", "");
+      showApp();
+    });
+
+    $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); initAuth(); });
+
+    // ---------- Productos ----------
+    async function loadProducts() {
+      $("list").innerHTML = '<p class="empty">Cargando…</p>';
+      const { data, error } = await sb.from("productos").select("*").order("orden", { ascending: true }).order("creado_en", { ascending: false });
+      if (error) { $("list").innerHTML = '<p class="empty">Error al cargar productos.</p>'; return; }
+      $("count").textContent = "(" + data.length + ")";
+      if (!data.length) { $("list").innerHTML = '<p class="empty">Todavía no hay productos. Agregá el primero →</p>'; return; }
+      $("list").innerHTML = data.map(p => `
+        <div class="prod-item">
+          <img class="thumb" src="${p.imagen_url || placeholderImg(p.color)}" alt="">
+          <div class="info">
+            <h3>${escapeHtml(p.nombre)}${p.disponible ? "" : '<span class="badge off">Oculto</span>'}<span class="badge">${escapeHtml(p.categoria)}</span></h3>
+            <p>${escapeHtml(p.spec || "")}</p>
+            <div class="price">${escapeHtml(p.precio || "")}</div>
+          </div>
+          <div class="acts">
+            <button class="btn btn-ghost btn-sm" data-edit="${p.id}">Editar</button>
+            <button class="btn btn-danger" data-del="${p.id}">Borrar</button>
+          </div>
+        </div>`).join("");
+      $("list").querySelectorAll("[data-edit]").forEach(b => b.onclick = () => startEdit(data.find(p => p.id === b.dataset.edit)));
+      $("list").querySelectorAll("[data-del]").forEach(b => b.onclick = () => delProduct(b.dataset.del));
+    }
+
+    // Vista previa de la foto elegida
+    $("foto").addEventListener("change", () => {
+      const f = $("foto").files[0];
+      if (f) { $("preview").src = URL.createObjectURL(f); $("preview").classList.remove("hidden"); }
+    });
+
+    function resetForm() {
+      $("prodForm").reset();
+      $("prodId").value = "";
+      $("preview").classList.add("hidden"); $("preview").src = "";
+      $("formTitle").textContent = "Agregar producto";
+      $("cancelBtn").classList.add("hidden");
+      showMsg($("formMsg"), "", "");
+    }
+    $("cancelBtn").addEventListener("click", resetForm);
+
+    function startEdit(p) {
+      $("prodId").value = p.id;
+      $("nombre").value = p.nombre || "";
+      $("spec").value = p.spec || "";
+      $("condicion").value = p.condicion || "";
+      $("precio").value = p.precio || "";
+      $("categoria").value = p.categoria || "Nuevas";
+      $("color").value = p.color || "#2E5CE6";
+      $("disponible").value = String(p.disponible);
+      $("formTitle").textContent = "Editar producto";
+      $("cancelBtn").classList.remove("hidden");
+      if (p.imagen_url) { $("preview").src = p.imagen_url; $("preview").classList.remove("hidden"); }
+      else { $("preview").classList.add("hidden"); }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    $("prodForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = $("saveBtn"); btn.disabled = true; const oldTxt = btn.textContent; btn.textContent = "Guardando…";
+      try {
+        let imagen_url = $("prodId").value ? undefined : null; // en edición, dejar la que estaba si no se cambia
+        const file = $("foto").files[0];
+        if (file) {
+          const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+          const path = Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + ext;
+          const { error: upErr } = await sb.storage.from("productos").upload(path, file, { cacheControl: "3600", upsert: false });
+          if (upErr) throw upErr;
+          imagen_url = sb.storage.from("productos").getPublicUrl(path).data.publicUrl;
+        }
+
+        const row = {
+          nombre: $("nombre").value.trim(),
+          spec: $("spec").value.trim(),
+          condicion: $("condicion").value.trim(),
+          precio: $("precio").value.trim(),
+          categoria: $("categoria").value,
+          color: $("color").value,
+          disponible: $("disponible").value === "true",
+        };
+        if (imagen_url !== undefined) row.imagen_url = imagen_url;
+
+        let error;
+        if ($("prodId").value) ({ error } = await sb.from("productos").update(row).eq("id", $("prodId").value));
+        else ({ error } = await sb.from("productos").insert(row));
+        if (error) throw error;
+
+        resetForm();
+        showMsg($("formMsg"), "Producto guardado ✓", "ok");
+        loadProducts();
+      } catch (err) {
+        showMsg($("formMsg"), "Error al guardar: " + (err.message || err), "err");
+      } finally {
+        btn.disabled = false; btn.textContent = oldTxt;
+      }
+    });
+
+    async function delProduct(id) {
+      if (!confirm("¿Seguro que querés borrar este producto?")) return;
+      const { error } = await sb.from("productos").delete().eq("id", id);
+      if (error) { alert("Error al borrar: " + error.message); return; }
+      loadProducts();
+    }
+
+    // ---------- Utilidades ----------
+    function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+    function placeholderImg(color) {
+      const c = color || "#2E5CE6";
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'><rect width='400' height='300' fill='#EDEDEA'/><g transform='translate(60,58)'><rect width='280' height='170' rx='10' fill='#0A0A0A'/><rect x='12' y='12' width='256' height='146' rx='4' fill='${c}'/><path d='M-28 170 L308 170 L326 200 L-46 200 Z' fill='#0A0A0A'/></g></svg>`;
+      return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    }
+
+    initAuth();
+  </script>
+</body>
+</html>

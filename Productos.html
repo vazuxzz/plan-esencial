@@ -118,24 +118,16 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script>
     // ============================================================
-    //  PRODUCTOS  —  editá esta lista para cambiar el catálogo.
-    //  Para poner una FOTO REAL: agregá  img: "https://...url-de-la-foto.jpg"
-    //  a ese producto. Si no ponés img, se muestra una ilustración de ejemplo.
+    //  Los productos se cargan desde la base de datos.
+    //  Para agregar / editar / borrar productos, entrá al panel: admin.html
     // ============================================================
     const WHATSAPP = "595974734550"; // número sin + ni espacios
-
-    const PRODUCTOS = [
-      { name: "Lenovo ThinkPad T14",       spec: "i5-10ª Gen · 16GB · 512GB SSD", condition: "Reacondicionada · Grado A", price: "Gs. 3.800.000", cat: "Reacondicionadas", color: "#2E5CE6" },
-      { name: "HP EliteBook 840 G6",       spec: "i7-8ª Gen · 16GB · 256GB SSD",  condition: "Reacondicionada · Grado A", price: "Gs. 4.200.000", cat: "Reacondicionadas", color: "#0FA36B" },
-      { name: "Dell Latitude 5420",        spec: "i5-11ª Gen · 8GB · 256GB SSD",  condition: "Reacondicionada · Grado B", price: "Gs. 3.100.000", cat: "Reacondicionadas", color: "#E6642E" },
-      { name: "Lenovo IdeaPad 3",          spec: "Ryzen 5 · 8GB · 256GB SSD",     condition: "Nueva",                     price: "Gs. 3.950.000", cat: "Nuevas",          color: "#8B3EE6" },
-      { name: "HP Pavilion 15",            spec: "i5-12ª Gen · 8GB · 512GB SSD",  condition: "Nueva",                     price: "Gs. 4.600.000", cat: "Nuevas",          color: "#E62E7B" },
-      { name: "Dell Inspiron 14",          spec: "i3-10ª Gen · 8GB · 256GB SSD",  condition: "Reacondicionada · Grado A", price: "Gs. 2.650.000", cat: "Reacondicionadas", color: "#1F9DE6" },
-      { name: "ASUS VivoBook 15",          spec: "Ryzen 7 · 16GB · 512GB SSD",    condition: "Nueva",                     price: "Gs. 5.100.000", cat: "Gaming",          color: "#E6B02E" },
-      { name: "Lenovo ThinkPad X1 Carbon", spec: "i7-9ª Gen · 16GB · 512GB SSD",  condition: "Reacondicionada · Grado A", price: "Gs. 5.400.000", cat: "Reacondicionadas", color: "#2EC5C5" },
-    ];
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+    let PRODUCTOS = [];
 
     // Ilustración de notebook (imagen de ejemplo) — se usa si el producto no tiene foto real.
     function laptopSVG(color) {
@@ -163,7 +155,7 @@
     function wa(msg) { return "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg); }
     function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
-    const cats = ["Todas", ...Array.from(new Set(PRODUCTOS.map(p => p.cat)))];
+    let cats = ["Todas"];
     let filtro = "Todas";
     const filtersEl = document.getElementById("filters");
     const gridEl = document.getElementById("grid");
@@ -197,8 +189,29 @@
       }).join("");
     }
 
-    renderFiltros();
-    renderGrid();
+    async function cargar() {
+      gridEl.innerHTML = '<p style="color:#666;">Cargando productos…</p>';
+      const { data, error } = await sb
+        .from("productos")
+        .select("*")
+        .eq("disponible", true)
+        .order("orden", { ascending: true })
+        .order("creado_en", { ascending: false });
+      if (error) { gridEl.innerHTML = '<p style="color:#666;">No se pudieron cargar los productos. Probá recargar la página.</p>'; return; }
+      PRODUCTOS = (data || []).map(p => ({
+        name: p.nombre, spec: p.spec, condition: p.condicion,
+        price: p.precio, cat: p.categoria, color: p.color, img: p.imagen_url || null
+      }));
+      cats = ["Todas", ...Array.from(new Set(PRODUCTOS.map(p => p.cat)))];
+      if (!PRODUCTOS.length) {
+        filtersEl.innerHTML = "";
+        gridEl.innerHTML = '<p style="color:#666;">Todavía no hay productos cargados. Volvé pronto.</p>';
+        return;
+      }
+      renderFiltros();
+      renderGrid();
+    }
+    cargar();
   </script>
 
 </body>
