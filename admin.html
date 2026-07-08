@@ -77,14 +77,14 @@
         <svg width="34" height="34" viewBox="0 0 40 40"><rect width="40" height="40" rx="6" fill="#F7F7F5"/><text x="20" y="27" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="18" fill="#0A0A0A" text-anchor="middle">RT</text></svg>
         REMATECH
       </div>
-      <h1>Panel de administración</h1>
-      <p class="sub">Ingresá para gestionar los productos de la tienda.</p>
+      <h1 id="authTitle">Panel de administración</h1>
+      <p class="sub" id="authSub">Ingresá para gestionar los productos de la tienda.</p>
       <div id="loginMsg"></div>
       <label>Correo</label>
       <input type="email" id="email" autocomplete="username" required placeholder="tucorreo@ejemplo.com">
       <label>Contraseña</label>
       <input type="password" id="password" autocomplete="current-password" required placeholder="••••••••">
-      <button type="submit" class="btn btn-pri" style="width:100%;">Ingresar</button>
+      <button type="submit" class="btn btn-pri" id="authSubmit" style="width:100%;">Ingresar</button>
     </form>
   </div>
 
@@ -182,22 +182,60 @@
     }
 
     // ---------- Sesión ----------
-    async function refreshSession() {
+    let authMode = "login"; // "login" o "register"
+
+    function showApp() { loginView.classList.add("hidden"); appView.classList.remove("hidden"); loadProducts(); }
+
+    function applyAuthMode() {
+      if (authMode === "register") {
+        $("authTitle").textContent = "Crear cuenta de administrador";
+        $("authSub").textContent = "Sos el primero en registrarte: esta cuenta será la del administrador de la tienda.";
+        $("authSubmit").textContent = "Crear cuenta";
+        $("password").setAttribute("autocomplete", "new-password");
+      } else {
+        $("authTitle").textContent = "Panel de administración";
+        $("authSub").textContent = "Ingresá para gestionar los productos de la tienda.";
+        $("authSubmit").textContent = "Ingresar";
+        $("password").setAttribute("autocomplete", "current-password");
+      }
+    }
+
+    async function initAuth() {
       const { data } = await sb.auth.getSession();
-      if (data.session) { loginView.classList.add("hidden"); appView.classList.remove("hidden"); loadProducts(); }
-      else { appView.classList.add("hidden"); loginView.classList.remove("hidden"); }
+      if (data.session) { showApp(); return; }
+      // Si todavía no hay ningún admin, el primero en registrarse lo será.
+      let existe = true;
+      try { const r = await sb.rpc("admin_existe"); existe = !!r.data; } catch (e) { existe = true; }
+      authMode = existe ? "login" : "register";
+      applyAuthMode();
+      appView.classList.add("hidden");
+      loginView.classList.remove("hidden");
     }
 
     $("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const email = $("email").value.trim(), password = $("password").value;
+
+      if (authMode === "register") {
+        showMsg($("loginMsg"), "Creando cuenta…", "ok");
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) { showMsg($("loginMsg"), "No se pudo crear la cuenta: " + error.message, "err"); return; }
+        if (data.session) { showMsg($("loginMsg"), "", ""); showApp(); }
+        else {
+          authMode = "login"; applyAuthMode();
+          showMsg($("loginMsg"), "Cuenta creada ✓ Revisá tu correo, confirmá la cuenta y luego iniciá sesión.", "ok");
+        }
+        return;
+      }
+
       showMsg($("loginMsg"), "Ingresando…", "ok");
-      const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
-      if (error) { showMsg($("loginMsg"), "No se pudo ingresar: correo o contraseña incorrectos.", "err"); return; }
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) { showMsg($("loginMsg"), "No se pudo ingresar: correo/contraseña incorrectos, o falta confirmar el correo.", "err"); return; }
       showMsg($("loginMsg"), "", "");
-      refreshSession();
+      showApp();
     });
 
-    $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); refreshSession(); });
+    $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); initAuth(); });
 
     // ---------- Productos ----------
     async function loadProducts() {
@@ -310,7 +348,7 @@
       return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
     }
 
-    refreshSession();
+    initAuth();
   </script>
 </body>
 </html>
