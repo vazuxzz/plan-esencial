@@ -220,11 +220,13 @@
         showMsg($("loginMsg"), "Creando cuenta…", "ok");
         const { data, error } = await sb.auth.signUp({ email, password });
         if (error) { showMsg($("loginMsg"), "No se pudo crear la cuenta: " + error.message, "err"); return; }
-        if (data.session) { showMsg($("loginMsg"), "", ""); showApp(); }
-        else {
+        if (data.session) { showMsg($("loginMsg"), "", ""); showApp(); return; }
+        // El correo queda confirmado automáticamente: iniciamos sesión enseguida.
+        const { error: e2 } = await sb.auth.signInWithPassword({ email, password });
+        if (e2) {
           authMode = "login"; applyAuthMode();
-          showMsg($("loginMsg"), "Cuenta creada ✓ Revisá tu correo, confirmá la cuenta y luego iniciá sesión.", "ok");
-        }
+          showMsg($("loginMsg"), "Cuenta creada ✓ Ahora iniciá sesión con tu correo y contraseña.", "ok");
+        } else { showMsg($("loginMsg"), "", ""); showApp(); }
         return;
       }
 
