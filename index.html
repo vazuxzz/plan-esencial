@@ -82,7 +82,8 @@
     .featured .head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 44px; gap: 16px; }
     .featured h2 { font-size: 34px; font-weight: 700; margin: 0; }
     .featured .vertodo { font-family: 'IBM Plex Mono', monospace; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1.5px solid #0A0A0A; padding-bottom: 2px; white-space: nowrap; }
-    .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; align-items: stretch; }
+    /* Una sola fila: al haber más productos, los cuadros se encogen (el inicio no crece en alto) */
+    .fgrid { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 24px; align-items: stretch; }
 
     .product-card { position: relative; border-radius: 28px; background: #fff; box-shadow: 18px 18px 44px #d6dae2, -18px -18px 44px #ffffff; transition: transform .5s cubic-bezier(.25,.8,.25,1), box-shadow .5s cubic-bezier(.25,.8,.25,1); transform-style: preserve-3d; }
     .product-card:hover { transform: translateY(-12px) scale(1.015); box-shadow: 26px 26px 56px #cdd2db, -26px -26px 56px #ffffff; z-index: 5; }
@@ -120,14 +121,20 @@
     .footer .copy { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #666; margin: 24px 0 0 0; }
 
     /* RESPONSIVE */
+    @media (max-width: 1100px) {
+      .fgrid { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(3, 1fr); }
+    }
     @media (max-width: 900px) {
       .hero { grid-template-columns: 1fr; padding: 64px 24px; }
       .hero-art { max-width: 320px; }
       .nav, .why, .featured, .footer { padding-left: 24px; padding-right: 24px; }
       .why { grid-template-columns: 1fr; gap: 40px; padding: 64px 24px; }
-      .fgrid { grid-template-columns: 1fr; }
+      .fgrid { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, 1fr); }
       .footer .cols { grid-template-columns: 1fr; gap: 32px; }
       .menu { gap: 18px; font-size: 12px; }
+    }
+    @media (max-width: 560px) {
+      .fgrid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
