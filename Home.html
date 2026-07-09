@@ -312,10 +312,10 @@
       </svg>`;
     }
 
-    // Destacados: primeros 3 productos disponibles, con imagen
+    // Destacados: hasta 6 productos disponibles, con imagen
     async function cargarDestacados() {
       const { data, error } = await sb.from("productos").select("*")
-        .eq("disponible", true).order("orden", { ascending: true }).limit(3);
+        .eq("disponible", true).order("orden", { ascending: true }).limit(6);
       if (error || !data || !data.length) {
         $("featured").innerHTML = '<p style="color:#666;">Pronto vas a ver acá nuestros equipos destacados.</p>';
         return;
